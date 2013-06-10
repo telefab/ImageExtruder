@@ -4,14 +4,20 @@ import scipy.misc
 
 # Number of depth images used to compute one averaged image
 AVERAGE_WINDOW = 5
+# Maximum real depth difference from the nearest point
+MAX_REAL_DEPTH_DIFF = 110
 # Object width
 OBJECT_WIDTH = 200
 # Object height
 OBJECT_HEIGHT = 200
-# Object ratio (width / depth)
-OBJECT_XY_RATIO = float(OBJECT_WIDTH) / OBJECT_HEIGHT
 # Object depth
-OBJECT_DEPTH = 50
+OBJECT_DEPTH = 100
+# Base depth (in pixels)
+BASE_DEPTH = 6
+# Vertical pixel size (mm)
+VERTICAL_PIXEL_SIZE = 0.2
+# Horizontal pixel size (mm)
+HORIZONTAL_PIXEL_SIZE = 0.25
 
 class Kinect:
 	"""
@@ -58,12 +64,18 @@ class Kinect:
 		while histo[i] > 0 and i < (maxi - mini):
 			i+= 1
 		maxi = i + mini - 1
+		# Limit the maximum depth, forgets far points
+		if maxi - mini > MAX_REAL_DEPTH_DIFF:
+			maxi = mini + MAX_REAL_DEPTH_DIFF
 		self.__capturedData = (255 * (self.__capturedData - mini)) / (maxi - mini)
 		self.__capturedData = self.__capturedData.clip(0, 255)
 		# Interpolate data to remove unknown data holes
 		self.__capturedData = self.__interpolate(self.__capturedData)
-		# Scale data
+		# Scale data width and height (works only with data scaled between 0 and 255)
 		self.__capturedData = scipy.misc.imresize(self.__capturedData, (OBJECT_WIDTH, OBJECT_HEIGHT))
+		# Scale depth
+		self.__capturedData = self.__capturedData.astype(numpy.uint32)
+		self.__capturedData = (self.__capturedData * OBJECT_DEPTH) / 255
 
 	def __interpolate(self, data):
 		"""
@@ -168,11 +180,50 @@ class Kinect:
 		return data
 
 	@property
+	def stlCaptured(self):
+		"""
+		Transform the selected data into a set of faces
+		that can be exported directly to STL
+		"""
+		data = self.__capturedData
+		unitH = HORIZONTAL_PIXEL_SIZE
+		unitV = VERTICAL_PIXEL_SIZE
+		width = OBJECT_WIDTH
+		height = OBJECT_HEIGHT
+		depth = OBJECT_DEPTH
+		if data is None:
+			return None
+		# Function to get a point on the top surface from x and y
+		def topPoint(x, y):
+			return ((x-width/2)*unitH, (height/2-y)*unitH, (BASE_DEPTH + depth - data[y,x])*unitV)
+		# Function to get a point on the bottom surface from x and y
+		def bottomPoint(x, y):
+			return ((x-width/2)*unitH, (height/2-y)*unitH, 0)
+		# Constructs a simple square base
+		base = [(bottomPoint(0, 0), bottomPoint(0, height-1), bottomPoint(width-1, height-1), bottomPoint(width-1, 0))]
+		# Constructs the top surface
+		top = []
+		for x in range(0, width-1):
+			for y in range(0, height-1):
+				top.append((topPoint(x, y), topPoint(x+1, y), topPoint(x+1, y+1), topPoint(x, y+1)))
+		# Constructs the sides
+		sides = []
+		for x in range(0, width-1):
+				sides.append((bottomPoint(x, 0), bottomPoint((x+1), 0), topPoint(x+1, 0), topPoint(x, 0)))
+				sides.append((bottomPoint(x, height-1), bottomPoint(x+1, height-1), topPoint(x+1, height-1), topPoint(x, height-1)))
+		for y in range(0, height-1):
+				sides.append((bottomPoint(0, y), bottomPoint(0, y+1), topPoint(0, y+1), topPoint(0, y)))
+				sides.append((bottomPoint(width-1, y), bottomPoint(width-1, y+1), topPoint(width-1, y+1), topPoint(width-1, y)))
+		# Puts everything together
+		shape = base + top + sides
+		return shape
+
+	@property
 	def selectRatio(self):
 		"""
 		Returns the wanted select ratio
 		"""
-		return OBJECT_XY_RATIO
+		return float(OBJECT_WIDTH) / OBJECT_HEIGHT
 
 	@property
 	def objectWidth(self):

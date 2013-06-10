@@ -4,6 +4,9 @@ from PyQt4 import QtGui
 import sys
 from kinect import Kinect
 from preview import Preview
+from stl_writer import ASCIISTLWriter as STLWriter
+
+STL_PATH = "objet.stl"
 
 class Photomaton(QtGui.QMainWindow):
 	"""
@@ -26,6 +29,7 @@ class Photomaton(QtGui.QMainWindow):
 		self.__initUI()
 		# Events
 		self.__captureButton.clicked.connect(self.__onCapture)
+		self.__exportButton.clicked.connect(self.__onExport)
 
 	def __initUI(self):
 		"""
@@ -80,13 +84,25 @@ class Photomaton(QtGui.QMainWindow):
 			image.fill(0)
 		self.__objectImage.setPixmap(QtGui.QPixmap.fromImage(image))
 
-
 	def __onCapture(self, event):
 		"""
 		Capture the image from the camera
 		"""
 		self.__kinect.capture()
 		self.__refreshObjectImage()
+
+	def __onExport(self):
+		"""
+		Export the selected image to STL
+		"""
+		shape = self.__kinect.stlCaptured
+		if shape is None:
+			return
+		# Writes the STL file
+		with open(STL_PATH, 'w') as fp:
+			writer = STLWriter(fp)
+			writer.add_faces(shape)
+			writer.close()
 
 
 def main():
