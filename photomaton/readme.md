@@ -11,4 +11,4 @@ Requirements
 ----------------
 
 This program is written in Python 2. It requires some libraries:
-python-freenect python-numpy python-scipy
+python-freenect python-qt4 python-numpy python-scipy
