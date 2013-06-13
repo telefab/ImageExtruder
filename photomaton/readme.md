@@ -1,9 +1,9 @@
 Kinect photomaton
 =================
 
-Scan your face using the Kinect and export an STL file to print.
+**Scan your face using the Kinect and export an STL file to print.**
 
-The main executable is photomaton.py.
+The main executable is **photomaton.py**.
 
 
 * First select your face in the live preview window, then click "Capturer". 
@@ -15,3 +15,19 @@ Requirements
 
 This program is written in Python 2. It requires some libraries:
 python-freenect python-qt4 python-numpy python-scipy
+
+It also requires a Kinect device to be connected to the computer.
+
+
+Configuration
+----------------
+
+Settings about the detection maximum depth,
+the object precision and size can be modified at the top of the **kinect.py** file.
+
+Troubleshooting
+----------------
+
+If the program does not start, it probably has a problem to communicate with the Kinect.
+Try to unplug it and plug it again. If it still does not work, try installing the freenect examples and
+check if they work.
