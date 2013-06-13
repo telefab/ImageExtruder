@@ -15,9 +15,9 @@ OBJECT_DEPTH = 100
 # Base depth (in pixels)
 BASE_DEPTH = 6
 # Vertical pixel size (mm)
-VERTICAL_PIXEL_SIZE = 0.2
+VERTICAL_PIXEL_SIZE = 0.16
 # Horizontal pixel size (mm)
-HORIZONTAL_PIXEL_SIZE = 0.25
+HORIZONTAL_PIXEL_SIZE = 0.2
 
 class Kinect:
 	"""
