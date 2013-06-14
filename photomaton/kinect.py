@@ -18,23 +18,33 @@ BASE_DEPTH = 6
 VERTICAL_PIXEL_SIZE = 0.16
 # Horizontal pixel size (mm)
 HORIZONTAL_PIXEL_SIZE = 0.2
+# Export filename (None = to choose in the GUI)
+EXPORT_FILENAME = None
 
 class Kinect:
 	"""
 	Gets and treats data from the kinect.
 	"""
 	def __init__(self):
+		# Keeps the depth to compute an average
 		self.__depthHistory = []
-		self.__depthData = None
-		self.__rect = None
+		# Depth data, averaged
+		self.__depthData = numpy.zeros((480, 640), numpy.uint16)
+		# Selection rectangle for the capture (start point, dimensions)
+		self.__rect = [[0, 0], [480, 480]]
+		# Captured data, improved as much as possible
 		self.__capturedData = None
 
 	def readDepth(self):
 		"""
 		Reads the depth from the Kinect.
 		Returns if raw depth data has been updated.
+		Raises a Kinect.KinectError if there are communication problems with the Kinect
 		"""
-		self.__depthHistory.append(freenect.sync_get_depth()[0])
+		response = freenect.sync_get_depth()
+		if response is None:
+			raise Kinect.KinectError("not replying")
+		self.__depthHistory.append(response[0])
 		if len(self.__depthHistory) >= AVERAGE_WINDOW:
 			newData = self.__depthHistory[0]
 			for i in range(0, AVERAGE_WINDOW):
@@ -59,9 +69,11 @@ class Kinect:
 		# Detect and remove the background
 		mini = numpy.amin(self.__capturedData)
 		maxi = numpy.amax(self.__capturedData)
+		if maxi - mini == 0:
+			maxi+= 1
 		histo = numpy.histogram(self.__capturedData, maxi - mini, (mini, maxi))[0]
 		i = 2
-		while histo[i] > 0 and i < (maxi - mini):
+		while i < (maxi - mini) and histo[i] > 0:
 			i+= 1
 		maxi = i + mini - 1
 		# Limit the maximum depth, forgets far points
@@ -139,11 +151,6 @@ class Kinect:
 		"""
 		Data at the default freenect format (numpy 16-bit array)
 		"""
-		if self.__depthData is None:
-			# For when data is asked before it is ready
-			if len(self.__depthHistory) == 0:
-				self.readDepth()
-			self.__depthData = self.__depthHistory[0]
 		return self.__depthData
 
 	@property 
@@ -239,6 +246,13 @@ class Kinect:
 		"""
 		return OBJECT_HEIGHT
 
+	@property
+	def exportFilename(self):
+		"""
+		Default export file name if any
+		"""
+		return EXPORT_FILENAME
+
 	def __scaleToByte(self, depth, refDepth=None):
 		"""
 		Scales the depth beteen 0 and 255 according to itself or the reference
@@ -260,3 +274,10 @@ class Kinect:
 		"""
 		depth+= (depth << 8) + (depth << 16) + (255 << 24)
 		return depth
+
+	class KinectError(RuntimeError):
+		"""
+		Kinect-specific exception: communication is wrong
+		"""
+		def __init__(self, arg):
+			self.args = [arg]

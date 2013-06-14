@@ -2,11 +2,10 @@
 # -*- coding: utf-8 -*- 
 from PyQt4 import QtGui
 import sys
+import os.path
 from kinect import Kinect
 from preview import Preview
 from stl_writer import ASCIISTLWriter as STLWriter
-
-STL_PATH = "objet.stl"
 
 class Photomaton(QtGui.QMainWindow):
 	"""
@@ -18,8 +17,9 @@ class Photomaton(QtGui.QMainWindow):
 		"""
 		QtGui.QMainWindow.__init__(self)
 		# Internal state
-		self.__kinect = Kinect()
-		self.__objectData = None
+		self.__kinect = Kinect() # This contains all the logic
+		self.__objectData = None # Keep this to avoid refresh issues on the image
+		self.__exportDirectory = os.path.expanduser('~') # Save directory
 		# Initialize the UI
 		self.__mainWidget = None
 		self.__previewImage = None
@@ -95,14 +95,26 @@ class Photomaton(QtGui.QMainWindow):
 		"""
 		Export the selected image to STL
 		"""
+		# Select the filename
+		filename = self.__kinect.exportFilename
+		if filename is None:
+			filename = QtGui.QFileDialog.getSaveFileName(self, 'Exporter en STL', self.__exportDirectory, 'Fichier STL (*.stl)')
+			filename = str(filename)
+			if filename == '':
+				return
+			self.__exportDirectory = os.path.dirname(filename)
+		# Get the shape
 		shape = self.__kinect.stlCaptured
 		if shape is None:
+			QtGui.QMessageBox.warning(self, u"Pas de capture", u"Capturez une image avant de l'exporter.")
 			return
 		# Writes the STL file
-		with open(STL_PATH, 'w') as fp:
+		with open(filename, 'w') as fp:
 			writer = STLWriter(fp)
 			writer.add_faces(shape)
 			writer.close()
+		# Confirm
+		QtGui.QMessageBox.information(self, u"Modèle 3D prêt", u"Le modèle 3D a été exporté, il ne reste plus qu'à l'imprimer.")
 
 
 def main():

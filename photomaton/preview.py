@@ -1,4 +1,5 @@
 from PyQt4 import QtGui
+
 import sys
 
 class Preview(QtGui.QLabel):
@@ -20,7 +21,7 @@ class Preview(QtGui.QLabel):
 		# Initialization
 		self.__setKinectPixmap()
 		# Events
-		self.startTimer(20)
+		self.__timer = self.startTimer(20)
 
 	def pause(self):
 		"""
@@ -40,7 +41,13 @@ class Preview(QtGui.QLabel):
 		"""
 		QtGui.QLabel.timerEvent(self, event)
 		if self.__refresh:
-			if self.__kinect.readDepth():
+			toUpdate = False
+			try:
+				toUpdate = self.__kinect.readDepth()
+			except self.__kinect.KinectError:
+				self.killTimer(self.__timer)
+				QtGui.QMessageBox.critical(self, u"Kinect : connexion impossible", u"Connectez la Kinect correctement et relancez l'application.")
+			if toUpdate:
 				self.__setKinectPixmap()
 
 	def mousePressEvent(self, event):
