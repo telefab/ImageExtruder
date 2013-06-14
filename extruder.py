@@ -24,7 +24,7 @@ PROFILE_AREA_WIDTH = 150
 
 # Size of 1 pixel in millimeters
 # Allows to scale the whole shape
-SHAPE_UNIT = 0.2
+SHAPE_UNIT = 0.16
 
 # Base altitude (no shape)
 # in pixels
