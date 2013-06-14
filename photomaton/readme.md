@@ -31,3 +31,14 @@ Troubleshooting
 If the program does not start, it probably has a problem to communicate with the Kinect.
 Try to unplug it and plug it again. If it still does not work, try installing the freenect examples and
 check if they work.
+
+With Ubuntu 12.04, the Kinect is used automatically as a webcam, so it cannot be used by Freenect.
+To fix this, type in a terminal:
+```bash
+sudo modprobe -r gspca_kinect
+sudo modprobe -r gspca_main
+```
+Or to make it permanent, type as root:
+```bash
+echo "blacklist gspca_kinect" >> /etc/modprobe.d/blacklist.conf
+```
